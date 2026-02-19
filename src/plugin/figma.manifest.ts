@@ -1,7 +1,7 @@
 import type { PluginManifest } from "../types/manifest";
 
 export const manifest: PluginManifest = {
-  name: "Scripter Pro",
+  name: "Cursor to Figma: MCP Automation",
   id: "fun.sojo.bridge-mcp-figma",
   api: "1.0.0",
   main: "code.js",

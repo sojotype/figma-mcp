@@ -4,9 +4,19 @@
   "description": "MCP server and plugin for Figma: allows you to work with Figma through the MCP protocol.",
   "main": "code.js",
   "author": "sojotype",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sojotype/bridge-mcp-figma"
+  },
   "private": true,
   "scripts": {
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "build:manifest": "bun scripts/generate-manifest.ts",
+    "build:api": "vite build --config plugin-api.vite.config.ts",
+    "build:ui": "vite build --config plugin-ui.vite.config.ts",
+    "watch:manifest": "bun scripts/watch-manifest.ts",
+    "build": "bun run build:api && bun run build:ui && bun run build:manifest",
+    "dev": "concurrently \"vite build --watch --config plugin-api.vite.config.ts\" \"vite build --watch --config plugin-ui.vite.config.ts\" \"bun run watch:manifest\""
   },
   "type": "module",
   "license": "MIT",
@@ -26,7 +36,8 @@
     "typescript": "^5.3.2",
     "ultracite": "7.0.11",
     "vite": "npm:rolldown-vite@7.3.1",
-    "vite-plugin-singlefile": "^2.3.0"
+    "vite-plugin-singlefile": "^2.3.0",
+    "concurrently": "^8.2.2"
   },
   "peerDependencies": {
     "typescript": "^5"
