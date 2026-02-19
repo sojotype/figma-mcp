@@ -9,42 +9,35 @@
     "url": "https://github.com/sojotype/bridge-mcp-figma"
   },
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "prepare": "lefthook install",
-    "build:manifest": "bun scripts/generate-manifest.ts",
-    "build:api": "vite build --config plugin-api.vite.config.ts",
-    "build:ui": "vite build --config plugin-ui.vite.config.ts",
-    "watch:manifest": "bun scripts/watch-manifest.ts",
-    "build": "bun run build:api && bun run build:ui && bun run build:manifest",
-    "dev": "concurrently \"vite build --watch --config plugin-api.vite.config.ts\" \"vite build --watch --config plugin-ui.vite.config.ts\" \"bun run watch:manifest\""
+    "dev": "concurrently \"bun run dev:plugin\" \"bun run dev:mcp\"",
+    "dev:plugin": "bun run --cwd packages/plugin dev",
+    "dev:mcp": "bun run --cwd packages/mcp dev",
+    "build": "bun run build:plugin && bun run build:mcp",
+    "build:plugin": "bun run --cwd packages/plugin build",
+    "build:mcp": "bun run --cwd packages/mcp build"
   },
   "type": "module",
   "license": "MIT",
-  "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
-  },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
-    "@figma/plugin-typings": "*",
     "@types/bun": "latest",
-    "@types/react": "^19.2.8",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@biomejs/biome": "2.3.11",
+    "concurrently": "^8.2.2",
     "lefthook": "^2.0.15",
     "lint-staged": "^16.2.7",
+    "tailwindcss": "^4",
     "typescript": "^5.3.2",
-    "ultracite": "7.0.11",
-    "vite": "npm:rolldown-vite@7.3.1",
-    "vite-plugin-singlefile": "^2.3.0",
-    "concurrently": "^8.2.2"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "ultracite": "7.0.11"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "bun x ultracite fix",
       "bun x ultracite fix"
     ]
   }

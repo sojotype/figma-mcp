@@ -4,5 +4,13 @@
     "ultracite/biome/core",
     "ultracite/biome/react",
     "ultracite/biome/remix"
+  ],
+  "overrides": [
+    {
+      "includes": ["packages/plugin/api/**"],
+      "javascript": {
+        "globals": ["figma", "__html__"]
+      }
+    }
   ]
 }

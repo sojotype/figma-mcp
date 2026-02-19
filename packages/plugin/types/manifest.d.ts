@@ -24,11 +24,11 @@ export type ManifestMenuItem =
       name: string;
       menu: ManifestMenuItem[];
     };
-export type ManifestRelaunchButton = {
+export interface ManifestRelaunchButton {
   command: string;
   name: string;
   multipleSelection?: boolean;
-};
+}
 export interface CodegenLanguage {
   label: string;
   value: string;

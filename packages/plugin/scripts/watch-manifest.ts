@@ -1,8 +1,11 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const distDir = resolve("dist");
+const scriptDir = fileURLToPath(new URL(".", import.meta.url));
+const projectRoot = resolve(scriptDir, "../../..");
+const distDir = resolve(projectRoot, "dist", "plugin");
 const watchedFiles = [resolve(distDir, "code.js"), resolve(distDir, "ui.html")];
 
 const mtimes = new Map<string, number>();
@@ -15,7 +18,22 @@ const regenerateManifest = () => {
 
   running = true;
   try {
-    execFileSync("bun", ["scripts/generate-manifest.ts"], { stdio: "inherit" });
+    execFileSync(
+      "bun",
+      [
+        resolve(
+          projectRoot,
+          "packages",
+          "plugin",
+          "scripts",
+          "generate-manifest.ts"
+        ),
+      ],
+      {
+        cwd: projectRoot,
+        stdio: "inherit",
+      }
+    );
     console.log("manifest.json regenerated");
   } finally {
     running = false;

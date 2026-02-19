@@ -1,4 +1,4 @@
-import type { PluginManifest } from "../types/manifest";
+import type { PluginManifest } from "./types/manifest";
 
 export const manifest: PluginManifest = {
   name: "Cursor to Figma: MCP Automation",

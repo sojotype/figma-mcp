@@ -1,12 +1,14 @@
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 import { viteSingleFile } from "vite-plugin-singlefile";
 
-const uiRoot = resolve(__dirname, "src/plugin/ui");
-const distDir = resolve(__dirname, "dist");
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const uiRoot = resolve(__dirname, "ui");
+const distDir = resolve(__dirname, "../../dist/plugin");
 
 export default defineConfig({
   root: uiRoot,
