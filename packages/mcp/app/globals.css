@@ -1,4 +1,11 @@
 @import "tailwindcss";
+@plugin "fluid-tailwindcss" {
+  minViewport: 375;
+  maxViewport: 1440;
+  useRem: true;
+  rootFontSize: 16;
+  checkAccessibility: true;
+}
 
 :root {
   --background: #ffffff;
