@@ -1,4 +1,5 @@
 {
+  "exclude": ["types/plugin-api.agent.d.ts"],
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext"],

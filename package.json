@@ -17,7 +17,8 @@
     "dev": "turbo run dev",
     "dev:plugin": "turbo run dev --filter=bridge-mcp-figma/plugin",
     "dev:mcp": "turbo run dev --filter=bridge-mcp-figma/mcp-server",
-    "build": "turbo run build"
+    "build": "turbo run build",
+    "generate:plugin-api-agent": "bun run --cwd packages/api generate:plugin-api-agent"
   },
   "type": "module",
   "license": "MIT",

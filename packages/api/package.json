@@ -19,7 +19,13 @@
       "default": "./tools/declarative.ts"
     }
   },
+  "scripts": {
+    "generate:plugin-api-agent": "bun run scripts/generate-plugin-api-agent.ts"
+  },
   "dependencies": {
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "*"
   }
 }

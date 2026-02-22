@@ -26,6 +26,9 @@
       "dependencies": {
         "zod": "^4.3.6",
       },
+      "devDependencies": {
+        "@figma/plugin-typings": "*",
+      },
     },
     "packages/mcp-server": {
       "name": "bridge-mcp-figma/mcp-server",
