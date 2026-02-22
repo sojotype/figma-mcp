@@ -8,7 +8,7 @@ export const manifest: PluginManifest = {
   ui: "index.html",
   editorType: ["figma"],
   documentAccess: "dynamic-page",
-  permissions: ["teamlibrary"],
+  permissions: ["teamlibrary", "currentuser"],
   networkAccess: {
     allowedDomains: ["*"],
     reasoning: "For accessing remote assets",
