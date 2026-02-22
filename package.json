@@ -14,12 +14,10 @@
   ],
   "scripts": {
     "prepare": "lefthook install",
-    "dev": "concurrently \"bun run dev:plugin\" \"bun run dev:mcp\"",
-    "dev:plugin": "bun run --cwd packages/plugin dev",
-    "dev:mcp": "bun run --cwd packages/mcp dev",
-    "build": "bun run build:plugin && bun run build:mcp",
-    "build:plugin": "bun run --cwd packages/plugin build",
-    "build:mcp": "bun run --cwd packages/mcp build"
+    "dev": "turbo run dev",
+    "dev:plugin": "turbo run dev --filter=bridge-mcp-figma/plugin",
+    "dev:mcp": "turbo run dev --filter=bridge-mcp-figma/mcp-server",
+    "build": "turbo run build"
   },
   "type": "module",
   "license": "MIT",
@@ -34,7 +32,8 @@
     "lefthook": "^2.0.15",
     "lint-staged": "^16.2.7",
     "tailwindcss": "^4",
-    "typescript": "^5.3.2",
+    "turbo": "^2.8.10",
+    "typescript": "^5.9.3",
     "ultracite": "7.0.11"
   },
   "lint-staged": {
