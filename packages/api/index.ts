@@ -1,7 +1,8 @@
 /**
- * Shared API package — re-exports and main entry.
- * Import subpaths: @bridge-mcp-figma/api/tools/utilitarian, @bridge-mcp-figma/api/tools/declarative
+ * Shared API package — single entry.
+ * Import: import { ... } from "@bridge-mcp-figma/api"
  */
 // biome-ignore lint/performance/noBarrelFile: package main entry
-export * from "./tools/declarative.ts";
-export * from "./tools/utilitarian.ts";
+export * from "./tools/declarative";
+export * from "./tools/types";
+export * from "./tools/utilitarian";

@@ -1,3 +1,20 @@
-// Utilitarian API helpers — add exports as needed.
+import { z } from "zod";
 
-export {};
+export const UTILITARIAN_SCHEMAS = {
+  // VARIABLES
+  createVariable: z.object({
+    name: z.string(),
+    collection: z.object({
+      id: z.string().optional(),
+      name: z.string().optional(),
+    }),
+    resolvedType: z.enum(["BOOLEAN", "FLOAT", "STRING", "COLOR"]),
+  }),
+  createVariableCollection: z.object({
+    name: z.string(),
+  }),
+  getVariableByIdAsync: z.object({
+    id: z.string(),
+  }),
+  // other tools...
+} as const;
