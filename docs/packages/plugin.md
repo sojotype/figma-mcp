@@ -4,16 +4,13 @@ Figma plugin that runs inside Figma and talks to the bridge via WebSocket.
 
 ## Role
 
-- **Backend (main thread)**: Entry `backend/main.ts`. Connects to PartyKit at `wss://{host}/party/{sessionId}`. On WebSocket message: `dispatch(tool, args)` → Figma API or composite handler → send `{ commandId, result }` or `{ commandId, error }` back.
+- **Backend (main thread)**: Entry `backend/main.ts`. Connects to PartyKit at `wss://{host}/party/{roomId}`. On connect, sends session metadata: **Figma user id**, **file id** (fileKey), **file name**, **user name** (`figma.currentUser.name`). On WebSocket message: `dispatch(tool, args)` → Figma API or composite handler → send `{ commandId, result }` or `{ commandId, error }` back.
 - **Frontend (UI iframe)**:
   - Shows connection status.
-  - Provides two auth entry points: **Email** and **Figma OAuth** buttons.
-  - Clicking **Email** opens the Next.js auth page for email/password login & registration.
-  - Clicking **Figma OAuth** opens the Figma OAuth entry point hosted in the Next.js app.
-  - After successful auth, the UI receives a **user token** and passes it to the backend (e.g. via `figma.ui.postMessage`).
-  - In **single-session mode** (only one active plugin session for the current user), the UI does **not** show any session identifier controls.
-  - In **multi-session mode** (more than one active plugin session for the same user), the UI surfaces the current `sessionId` with a copy button so the user can paste it into MCP if requested.
-- **Session ID**: From `getSessionId()` (uses `figma.currentUser?.sessionId` or random). Used only as a session/room identifier for the PartyKit bridge; user identity comes from the auth token. Visibility of this ID in the UI depends on single vs multi-session mode.
+  - Shows **MCP config** for adding the server to the client (e.g. Cursor): two variants — **local** (e.g. `http://localhost:3000/mcp?userIds=<figma.currentUser.id>`) and **remote** (same URL with production host). User copies the config and pastes it into the MCP client.
+  - In **single-session mode** (only one active plugin session for this Figma user), the UI does **not** show any room/session identifier.
+  - In **multi-session mode** (PartyKit notifies that this user has more than one active session), the UI shows the current **room ID** (with `room-` prefix) and a copy button so the user can paste it into the chat; the agent recognizes `room-...` as the session target.
+- **Room ID**: Generated for each plugin instance (e.g. `room-` + random id). Used as the PartyKit room name. Figma user identity is sent separately in the connect payload so PartyKit can maintain `userId → [sessions]`.
 
 ## Entry points
 
@@ -33,3 +30,4 @@ Figma plugin that runs inside Figma and talks to the bridge via WebSocket.
 
 - Sends/receives JSON: `{ commandId, tool, args }` and `{ commandId, result | error }`. See [architecture](../architecture.md).
 - Tool list and dispatch are aligned with [api](api.md) package (see [decisions/2025-02-22-utilitarian-tools-source-of-truth](../decisions/2025-02-22-utilitarian-tools-source-of-truth.md)).
+- Session flow: [2026-02-23-figma-userid-session-flow](../decisions/2026-02-23-figma-userid-session-flow.md).

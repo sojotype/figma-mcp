@@ -10,50 +10,22 @@ Figma plugin  ←  WebSocket  ←  same PartyKit room
 Figma Plugin API (figma.*)
 ```
 
-- **Session**: User opens the plugin → plugin generates or reuses a session ID and connects to PartyKit at `wss://…/party/{sessionId}`. Session ID is a transport identifier for routing commands, not a user identity.
-- **Tool call**: Agent calls an MCP tool → MCP server forwards the request to PartyKit (HTTP POST with `commandId`, `tool`, `args`, `secret`) → PartyKit pushes a command to the plugin over WebSocket → plugin runs `dispatch(tool, args)` and replies with result/error → PartyKit returns the result to MCP → agent gets the tool result.
+- **Session (room)**: User opens the plugin → plugin generates a room ID (e.g. prefixed with `room-`) and connects to PartyKit at `wss://…/party/{roomId}`. The MCP server is configured with a URL that includes a query parameter `userIds` (one or more Figma user IDs). Identity is the Figma user; no separate auth.
+- **Tool call**: Agent calls an MCP tool → MCP server forwards the request to PartyKit (HTTP POST with `commandId`, `tool`, `args`, `secret`) to the appropriate room → PartyKit pushes the command to the plugin → plugin runs `dispatch(tool, args)` and replies → result returns to the agent.
 
-## Authentication and identity
+## Identity and session flow
 
-- **User login**:
-  - Users authenticate via a shared Next.js web app:
-    - **Email**: email/password login & registration (creates an email-anchored user account).
-    - **Figma OAuth**: redirect to Figma, then back to the Next.js app, which exchanges the code and then **always asks for an email** before finalizing the account:
-      - If the email is new → create a new user with that email and attach the Figma identity.
-      - If the email already exists → inform the user that this email is already linked to another account (showing it in a partially masked form) and offer:
-        - to link the new Figma account to that existing user, or
-        - to provide a different email if they want a separate account.
-  - The web app issues a **user token** (e.g. JWT from Appwrite or a custom access token) that is shared between:
-    - the MCP client (`mcp login` flow),
-    - the Figma plugin UI,
-    - the bridge backend (PartyKit + MCP server).
-- **Plugin flow**:
-  - Plugin UI shows two buttons: “Email” and “Figma OAuth”.
-  - Clicking a button opens the appropriate login/registration page in the Next.js app (email form or Figma OAuth entry).
-  - After successful login, the plugin receives the user token (e.g. via postMessage back from the browser window or a polling callback) and passes it to the plugin backend.
-- **MCP flow**:
-  - `mcp login` triggers the same Next.js auth (email or Figma OAuth) and stores the resulting user token locally (e.g. in a dotfile).
-  - MCP client sends the user token with every MCP request (Authorization header or tool-param).
-- **Bridge flow**:
-  - When the plugin connects to PartyKit with a given `sessionId`, it also sends the user token.
-  - PartyKit validates the token via the auth provider and stores a mapping `sessionId → userId`.
-  - MCP server, when invoking tools, still uses `sessionId` for routing, but the bridge can resolve it to `userId` and enforce per-user logic if needed.
-  - The bridge also maintains `userId → [sessionId...]` so it knows how many active plugin sessions a user has and can support “no/one/many sessions” behavior.
+- **No separate authentication.** The user adds the MCP server in the client (e.g. Cursor) by pasting a URL that includes `userIds=<figmaUserId>` (or several, e.g. `userIds=id1;id2`). The plugin UI shows this config in two variants: local (e.g. `http://localhost:3000/mcp?userIds=...`) and remote.
+- **Plugin on connect**: Sends to PartyKit the current **Figma user id**, **file id** (fileKey), **file name**, and **user name** (`figma.currentUser.name`). PartyKit stores `userId → [sessions]`; each session has `roomId`, `fileName`, `userName`. If this user already has another active session, PartyKit tells the plugin; the plugin then shows the **room ID** (with `room-` prefix) and a copy button. Otherwise the plugin does not show a room ID.
+- **MCP**: Reads `userIds` from the request (URL query). When a tool is invoked without a session ID, MCP asks PartyKit for active sessions for those userIds and either routes to the single session, or returns a structured list so the agent can ask the user to choose (or the user pastes a `room-...` id in chat; the agent treats that as the session target).
 
 ## Session selection behavior
 
-- **0 sessions**:
-  - A tool invocation from MCP without `sessionId` fails with a clear error indicating that no active plugin sessions exist for the current user and that they must open the plugin in a Figma file.
-- **1 session**:
-  - MCP-server may omit `sessionId` in tool calls; it asks the bridge for active sessions for this user and routes the call to the single available `sessionId`.
-  - Plugin UI stays simple in this mode and does not expose the raw `sessionId` to the user (no copy button).
-- **>1 sessions**:
-  - MCP-server requires an explicit `sessionId` when more than one active session exists for a user.
-  - If `sessionId` is missing, MCP-server returns a structured error that includes a list of candidate sessions with:
-    - `sessionId`
-    - `documentName` / `fileKey` (where available)
-  - The assistant can then prompt the user with a human-readable list: e.g. “Choose one: (abc123 – Home page), (def456 – Design system)”.
-  - Plugin UI detects that the user has multiple active sessions and in each plugin instance shows the current `sessionId` and a copy control so the user can easily paste the identifier into MCP.
+- **0 sessions**: Tool invocation without session ID fails with a clear error: no active plugin sessions for the given user(s); user should open the plugin in a Figma file.
+- **1 session** (across the given users): MCP uses that session automatically; no room ID needed in chat.
+- **Multiple sessions (one user)**: MCP returns a structured list of sessions with `roomId`, `fileName`, `userName`. The agent prompts the user to choose; the user can also paste a `room-...` id in chat.
+- **Multiple users with sessions**: MCP returns a list of users (with names) and their sessions (with file names). The agent prompts to choose user and then session (or paste `room-...`).
+- **Explicit session**: If the user pastes a message starting with `room-`, the agent uses it as the session ID for subsequent tool calls.
 
 ## Components
 
@@ -66,8 +38,8 @@ Figma Plugin API (figma.*)
 
 ## Data flow (one tool call)
 
-1. Agent invokes tool with session ID (e.g. in tool args or via context).
-2. MCP server validates input, then POSTs to PartyKit: `{ commandId, tool, args, secret }`, with room = sessionId.
+1. Agent invokes tool (with optional session/room ID in args or context; or MCP resolves it from `userIds` via PartyKit).
+2. MCP server validates input, then POSTs to PartyKit: `{ commandId, tool, args, secret }`, with room = resolved roomId.
 3. PartyKit sends `{ commandId, tool, args }` to the plugin over WebSocket.
 4. Plugin `dispatch(tool, args)` → Figma API or composite handler → serializable result.
 5. Plugin sends `{ commandId, result }` or `{ commandId, error }` back over WebSocket.
@@ -76,7 +48,7 @@ Figma Plugin API (figma.*)
 ## Tool layers
 
 - **Utilitarian**: One tool ≈ one Figma Plugin API method. Schemas and types live in the [api](packages/api.md) package (see [2025-02-22-utilitarian-tools-source-of-truth](decisions/2025-02-22-utilitarian-tools-source-of-truth.md)). MCP and plugin both depend on api.
-- **Declarative**: Higher-level tools (e.g. “create frame tree with auto-layout”) implemented in the plugin; may call many API methods internally. Stay in plugin + MCP; api exposes declarative entry points as needed.
+- **Declarative**: Higher-level tools (e.g. "create frame tree with auto-layout") implemented in the plugin; may call many API methods internally. Stay in plugin + MCP; api exposes declarative entry points as needed.
 
 ## Security
 

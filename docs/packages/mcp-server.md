@@ -1,26 +1,20 @@
 # Package: mcp-server
 
-Next.js app that exposes MCP tools. When a tool is invoked, it forwards the call to the bridge (PartyKit) by session ID.
+Next.js app that exposes MCP tools. When a tool is invoked, it forwards the call to the bridge (PartyKit) by room/session ID.
 
 ## Role
 
-- Expose MCP endpoint (e.g. `/mcp`) via `mcp-handler`. Cursor (or another MCP client) connects and calls tools.
-- For each tool call: validate input (Zod), then HTTP POST to PartyKit room = session ID, with `commandId`, `tool`, `args`, `secret`. Return the JSON result (or error) to the agent.
-- Consume **user tokens** provided by the MCP client (via `mcp login`) and forward them to the bridge when needed so PartyKit can resolve `sessionId → userId` and `userId → [sessionId...]`.
-- Implement **session selection behavior** for tool calls:
-  - If the client does not specify `sessionId`, MCP-server:
-    - asks the bridge for the list of active sessions for the current user;
-    - routes to the single session automatically when the list has length 1;
-    - returns a structured error when the list has length 0 or >1 (see below).
-  - When multiple sessions are active, the error payload includes a list of candidate sessions with:
-    - `sessionId`
-    - `documentName` / `fileKey` (where available)
-  - This allows the assistant to prompt the user: e.g.  
-    “Multiple plugin sessions are active. Choose one: (abc123 – Home page), (def456 – Design system).”
+- Expose MCP endpoint (e.g. `/mcp`) via `mcp-handler`. The client (e.g. Cursor) is configured with a URL that includes a query parameter **userIds** (one or more Figma user IDs), e.g. `http://localhost:3000/mcp?userIds=12345` or `?userIds=id1;id2`.
+- For each tool call: validate input (Zod). If the client provides a **session/room ID** (e.g. from chat, starting with `room-`), use it to POST to PartyKit. If not, **resolve session** by asking PartyKit for active sessions for the `userIds` from the URL:
+  - **0 sessions** → return error: no active plugin sessions; user should open the plugin.
+  - **1 session** → use that room automatically.
+  - **Multiple sessions (one user)** → return a structured error with a list of sessions (`roomId`, `fileName`, `userName`) so the agent can ask the user to choose (or user pastes `room-...`).
+  - **Multiple users with sessions** → return a list of users (with names) and their sessions (with file names); agent asks user to choose user and session.
+- Then HTTP POST to PartyKit: `{ commandId, tool, args, secret }`, room = resolved or provided roomId. Return the JSON result (or error) to the agent.
 
 ## Entry points
 
-- **MCP route**: `app/mcp/route.ts` — `GET`/`POST`/`DELETE` handled by `createMcpHandler`. Tools are registered in the handler callback (currently a single `echo` demo tool).
+- **MCP route**: `app/mcp/route.ts` — `GET`/`POST`/`DELETE` handled by `createMcpHandler`. Tools are registered in the handler callback.
 
 ## Dependencies
 
@@ -30,11 +24,12 @@ Next.js app that exposes MCP tools. When a tool is invoked, it forwards the call
 
 ## Configuration
 
-- Session ID: passed per request (e.g. in tool arguments or context). It is a routing key for the PartyKit room, not a user identity.
-- User token: sent by the MCP client with each request (e.g. Authorization header or explicit param) and used for per-user behavior on the backend/bridge.
+- **userIds**: taken from the MCP request URL query (client is configured with that URL). Used to resolve active sessions via PartyKit when no session ID is provided.
+- **Session/room ID**: optional in tool args or context; if present (e.g. `room-...`), used directly for PartyKit routing.
 - PartyKit base URL (`PARTYKIT_HOST`) and `BRIDGE_SECRET` must be configured for the server to call the bridge.
 
 ## Links
 
-- Calls PartyKit HTTP API; plugin is connected to the same PartyKit room by session ID. See [architecture](../architecture.md).
-- Tool definitions will be driven by shared spec when `api-spec` exists (see [decisions/2025-02-22-utilitarian-tools-source-of-truth](../decisions/2025-02-22-utilitarian-tools-source-of-truth.md)).
+- Calls PartyKit HTTP API; plugin is connected to the same PartyKit room by room ID. See [architecture](../architecture.md).
+- Session flow: [2026-02-23-figma-userid-session-flow](../decisions/2026-02-23-figma-userid-session-flow.md).
+- Tool definitions: [api](api.md), [2025-02-22-utilitarian-tools-source-of-truth](../decisions/2025-02-22-utilitarian-tools-source-of-truth.md).

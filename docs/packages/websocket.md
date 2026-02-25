@@ -4,10 +4,10 @@ PartyKit server that acts as the bridge between the MCP server and the Figma plu
 
 ## Role
 
-- **Room = session**: Each room ID is a session ID. The plugin connects to `wss://{host}/party/{sessionId}`.
-- **Plugin connection**: When the plugin connects, it is the only (or primary) connection in that room. PartyKit receives messages from the plugin (command results).
-- **MCP request**: MCP server sends HTTP POST to the same PartyKit host; path/body identify the room (session ID) and the command. Server pushes `{ commandId, tool, args }` to the plugin over WebSocket and waits for `{ commandId, result }` or `{ commandId, error }` with a timeout (e.g. 30s).
- - **User sessions**: Bridge tracks `userId → [sessionId...]` based on auth messages from plugins so it can answer “how many active sessions does this user have?”.
+- **Room = session**: Each room ID is a session/room ID (e.g. `room-<id>`). The plugin connects to `wss://{host}/party/{roomId}`.
+- **Plugin connection**: On connect, the plugin sends a first message with session metadata: **userId** (Figma user id), **fileKey**, **fileName**, **userName** (`figma.currentUser.name`). PartyKit stores `userId → [sessions]` where each session has `roomId`, `fileName`, `userName`. If a user has more than one active session, PartyKit can notify the plugin (e.g. so it shows the room ID and copy button).
+- **MCP request**: MCP server sends HTTP POST to the same PartyKit host; path/body identify the room and the command. Server pushes `{ commandId, tool, args }` to the plugin over WebSocket and waits for `{ commandId, result }` or `{ commandId, error }` with a timeout (e.g. 30s).
+- **Session listing**: An endpoint or handler that accepts a list of **userIds** and returns active sessions for those users (with `roomId`, `fileName`, `userName` per session). MCP uses this to resolve 0/1/many sessions when no room ID is provided.
 
 ## Entry points
 
@@ -15,13 +15,11 @@ PartyKit server that acts as the bridge between the MCP server and the Figma plu
 
 ## Protocol
 
+- **From plugin (on connect)**: `{ type: 'hello', userId, fileKey, fileName, userName }` (or equivalent) so the bridge can register the session under the Figma user.
 - **To plugin**: `{ commandId, tool, args }`.
 - **From plugin**: `{ commandId, result? }` or `{ commandId, error? }`.
 - **From MCP (onRequest)**: POST body `{ commandId, tool, args, secret }`. Response: `{ result }` or error with status 5xx.
-- **Auth from plugin** (conceptual): first message after WebSocket connect includes user token and session metadata so the bridge can validate the user and register `sessionId` under the correct `userId`.
-- **Session listing** (conceptual): an internal or explicit endpoint/handler that, given a valid user token, returns a list of active sessions for that user:
-  - `sessionId`
-  - `documentName` / `fileKey` (if available)
+- **Session listing**: Request with `userIds`; response with list of users and their sessions (`roomId`, `fileName`, `userName`).
 
 ## Configuration
 
@@ -29,4 +27,5 @@ PartyKit server that acts as the bridge between the MCP server and the Figma plu
 
 ## Links
 
-- Plugin connects here; MCP server calls here by session ID. See [architecture](../architecture.md).
+- Plugin connects here; MCP server calls here by room ID. See [architecture](../architecture.md).
+- Session flow: [2026-02-23-figma-userid-session-flow](../decisions/2026-02-23-figma-userid-session-flow.md).

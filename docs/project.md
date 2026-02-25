@@ -8,8 +8,8 @@ Allow an AI agent (e.g. in Cursor) to edit Figma documents via MCP. The agent ca
 
 - **Single source of truth** for tool definitions: [api](packages/api.md) package (Zod schemas, types) so MCP and plugin stay in sync.
 - **Two tool layers**: utilitarian (thin wrappers over Figma Plugin API) and declarative (higher-level operations to reduce round-trips).
-- **Bridge is minimal**: PartyKit room per session; plugin connects by session ID; MCP server sends commands via HTTP to the room.
-- **User-centric auth**: login/registration via email/password or Figma OAuth, with a shared user token used by MCP, bridge, and plugin.
+- **Bridge is minimal**: PartyKit room per session; plugin connects by room ID; MCP server sends commands via HTTP to the room.
+- **Identity from Figma**: MCP URL contains Figma user ID(s) in a query parameter; no separate auth server. PartyKit tracks sessions per user and resolves 0/1/many sessions for tool calls.
 
 ## Non-goals (for now)
 

@@ -24,3 +24,4 @@ Read this first. Use it to choose which docs to open.
 - **Figma Plugin API types for agents / generating plugin-api.agent.d.ts** → packages/api.md.
 - **Bridge or WebSocket protocol** → packages/websocket.md, architecture.md.
 - **Figma plugin behaviour** → packages/plugin.md.
+- **Session/identity flow (Figma userId, room, multi-session)** → architecture.md, [2026-02-23-figma-userid-session-flow](decisions/2026-02-23-figma-userid-session-flow.md).
